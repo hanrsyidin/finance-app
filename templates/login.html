@@ -82,14 +82,14 @@
             <form @submit.prevent="handleLogin()" class="flex flex-col gap-5 mt-2">
                 <!-- Email Field -->
                 <label class="flex flex-col gap-2">
-                    <span class="text-white text-sm font-medium">Email Address</span>
+                    <span class="text-white text-sm font-medium">Username / Email</span>
                     <div
                         class="flex w-full items-center rounded-lg border border-[#304f69]/50 bg-[#101a23]/50 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all duration-200">
                         <input x-model="email"
                             class="w-full bg-transparent border-none text-white placeholder-[#8fb0cc] px-4 py-3.5 focus:ring-0 text-base font-normal"
-                            placeholder="Enter your email" required="" type="email" />
+                            placeholder="Enter your username" required="" type="text" />
                         <div class="pr-4 text-[#8fb0cc] flex items-center pointer-events-none">
-                            <span class="material-symbols-outlined" style="font-size: 20px;">mail</span>
+                            <span class="material-symbols-outlined" style="font-size: 20px;">person</span>
                         </div>
                     </div>
                 </label>
