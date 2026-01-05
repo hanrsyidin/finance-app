@@ -19,7 +19,7 @@ type Category struct {
 type Transaction struct {
 	ID            int     `json:"id"`
 	Amount        float64 `json:"amount"`
-	Description   string  `json:"description"`
+	Description   string  `json:"note"`
 	Date          string  `json:"date"`
 	Type          string  `json:"type"`
 	CategoryID    int     `json:"category_id"`

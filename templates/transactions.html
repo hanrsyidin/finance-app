@@ -601,25 +601,80 @@
                 },
 
                 async saveTransaction() {
-                    // ... (Same save logic as dashboard)
+                    if (!this.form.amount || !this.form.category_id) {
+                        this.showToast('Please fill all required fields', 'error');
+                        return;
+                    }
+
                     this.saving = true;
-                    setTimeout(() => {
-                        this.saving = false;
+
+                    try {
+                        if (window.location.hostname === 'localhost' || window.location.protocol === 'file:') {
+                            // MOCK SAVE
+                            await new Promise(r => setTimeout(r, 500));
+                            this.showToast(this.modal.editMode ? 'Transaction Updated' : 'Transaction Added', 'success');
+                            this.closeModal();
+                            this.loadData();
+                            this.saving = false;
+                            return;
+                        }
+
+                        const url = this.modal.editMode
+                            ? `/api/transactions/${this.form.id}`
+                            : '/api/transactions';
+
+                        const method = this.modal.editMode ? 'PUT' : 'POST';
+
+                        const res = await fetch(url, {
+                            method,
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                type: this.form.type,
+                                amount: this.form.amount,
+                                category_id: parseInt(this.form.category_id),
+                                date: this.form.date,
+                                note: this.form.note
+                            })
+                        });
+
+                        if (!res.ok) throw new Error('Failed to save');
+
                         this.closeModal();
                         this.showToast(this.modal.editMode ? 'Transaction Updated' : 'Transaction Added', 'success');
-                        this.loadData(); // Reload list
-                    }, 500);
+                        await this.loadData();
+
+                    } catch (err) {
+                        this.showToast(err.message, 'error');
+                    } finally {
+                        this.saving = false;
+                    }
                 },
 
                 async deleteTransaction(id) {
-                    if (!confirm('Delete transaction?')) return;
-                    this.saving = true;
-                    setTimeout(() => {
-                        this.saving = false;
+                    if (!confirm('Are you sure you want to delete this transaction?')) return;
+
+                    try {
+                        if (window.location.hostname === 'localhost' || window.location.protocol === 'file:') {
+                            await new Promise(r => setTimeout(r, 500));
+                            this.showToast('Transaction Deleted', 'success');
+                            this.closeModal();
+                            this.loadData();
+                            return;
+                        }
+
+                        const res = await fetch(`/api/transactions/${id}`, {
+                            method: 'DELETE'
+                        });
+
+                        if (!res.ok) throw new Error('Failed to delete');
+
                         this.closeModal();
                         this.showToast('Transaction Deleted', 'success');
-                        this.loadData();
-                    }, 500);
+                        await this.loadData();
+
+                    } catch (err) {
+                        this.showToast(err.message, 'error');
+                    }
                 },
 
                 // Utils
