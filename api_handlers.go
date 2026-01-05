@@ -120,6 +120,25 @@ func getTransactions(w http.ResponseWriter, r *http.Request) {
 		args = append(args, month)
 	}
 
+	search := r.URL.Query().Get("search")
+	if search != "" {
+		query += " AND (t.description LIKE ? OR c.name LIKE ?)"
+		like := "%" + search + "%"
+		args = append(args, like, like)
+	}
+
+	txType := r.URL.Query().Get("type")
+	if txType != "" {
+		query += " AND t.type = ?"
+		args = append(args, txType)
+	}
+
+	catID := r.URL.Query().Get("category_id")
+	if catID != "" {
+		query += " AND t.category_id = ?"
+		args = append(args, catID)
+	}
+
 	query += " ORDER BY t.date DESC, t.id DESC"
 
 	if limit != "" {
