@@ -274,7 +274,7 @@
 
                         <!-- Dynamic Bars (Daily) -->
                         <div
-                            class="flex-1 w-full flex items-end justify-between gap-1 px-1 pt-4 pb-2 h-[250px] overflow-x-auto custom-scrollbar">
+                            class="flex-1 w-full flex items-end justify-between gap-[2px] px-1 pt-4 pb-2 h-[250px] overflow-x-auto custom-scrollbar">
                             <template x-if="dailyStats.length === 0">
                                 <div class="w-full h-full flex items-center justify-center text-text-secondary">
                                     No data yet
@@ -282,16 +282,17 @@
                             </template>
 
                             <template x-for="day in dailyStats" :key="day.day">
-                                <div class="flex flex-col items-center justify-end h-full flex-shrink-0 w-8 md:w-full gap-2 group cursor-pointer"
+                                <div class="flex flex-col items-center justify-end h-full flex-1 min-w-[3px] gap-2 group cursor-pointer"
                                     :title="'Day ' + day.day + ': ' + formatCurrency(day.amount)">
                                     <!-- Bar -->
-                                    <div class="w-2 md:w-3 bg-primary/30 group-hover:bg-primary transition-all rounded-t-sm relative"
+                                    <div class="w-full bg-primary/30 group-hover:bg-primary transition-all rounded-t-sm relative"
                                         :style="'height: ' + (day.percentage || 0) + '%'">
                                         <div class="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-white text-background-dark text-xs font-bold px-2 py-1 rounded whitespace-nowrap z-10"
                                             x-text="formatCurrency(day.amount)"></div>
                                     </div>
                                     <!-- Label -->
-                                    <div class="text-text-secondary text-[10px] font-medium" x-text="day.day"></div>
+                                    <div class="text-text-secondary text-[8px] md:text-[10px] font-medium"
+                                        x-text="day.day"></div>
                                 </div>
                             </template>
                         </div>
