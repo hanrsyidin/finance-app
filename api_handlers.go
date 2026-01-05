@@ -9,11 +9,12 @@ import (
 // -- Models --
 
 type Category struct {
-	ID    int    `json:"id"`
-	Name  string `json:"name"`
-	Type  string `json:"type"`
-	Color string `json:"color"`
-	Icon  string `json:"icon"`
+	ID               int    `json:"id"`
+	Name             string `json:"name"`
+	Type             string `json:"type"`
+	Color            string `json:"color"`
+	Icon             string `json:"icon"`
+	TransactionCount int    `json:"transaction_count"`
 }
 
 type Transaction struct {
@@ -33,7 +34,14 @@ type Transaction struct {
 // Categories
 
 func getCategories(w http.ResponseWriter, r *http.Request) {
-	rows, err := db.Query("SELECT id, name, type, color, icon FROM categories ORDER BY name")
+	query := `
+		SELECT c.id, c.name, c.type, c.color, c.icon, COUNT(t.id) as transaction_count
+		FROM categories c
+		LEFT JOIN transactions t ON c.id = t.category_id
+		GROUP BY c.id
+		ORDER BY c.name
+	`
+	rows, err := db.Query(query)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -43,7 +51,7 @@ func getCategories(w http.ResponseWriter, r *http.Request) {
 	var categories []Category
 	for rows.Next() {
 		var c Category
-		if err := rows.Scan(&c.ID, &c.Name, &c.Type, &c.Color, &c.Icon); err != nil {
+		if err := rows.Scan(&c.ID, &c.Name, &c.Type, &c.Color, &c.Icon, &c.TransactionCount); err != nil {
 			continue
 		}
 		categories = append(categories, c)
@@ -240,8 +248,17 @@ func getDashboardSummary(w http.ResponseWriter, r *http.Request) {
 func getCategoryStats(w http.ResponseWriter, r *http.Request) {
 	month := r.URL.Query().Get("month")
 
+	// 1. Get Total Expense for the month first
+	var totalExpense float64
+	err := db.QueryRow("SELECT COALESCE(SUM(amount), 0) FROM transactions WHERE type = 'expense' AND strftime('%Y-%m', date) = ?", month).Scan(&totalExpense)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// 2. Get Expense by Category
 	query := `
-        SELECT c.name, c.color, COALESCE(SUM(t.amount), 0) as total
+        SELECT c.name, c.color, c.icon, COALESCE(SUM(t.amount), 0) as total
         FROM transactions t
         JOIN categories c ON t.category_id = c.id
         WHERE t.type = 'expense' AND strftime('%Y-%m', t.date) = ?
@@ -257,15 +274,24 @@ func getCategoryStats(w http.ResponseWriter, r *http.Request) {
 	defer rows.Close()
 
 	type Stat struct {
-		Label string  `json:"label"`
-		Color string  `json:"color"`
-		Total float64 `json:"total"`
+		Name       string  `json:"name"`
+		Color      string  `json:"color"`
+		Icon       string  `json:"icon"`
+		Amount     float64 `json:"amount"`
+		Percentage float64 `json:"percentage"`
 	}
 
 	var stats []Stat
 	for rows.Next() {
 		var s Stat
-		rows.Scan(&s.Label, &s.Color, &s.Total)
+		if err := rows.Scan(&s.Name, &s.Color, &s.Icon, &s.Amount); err != nil {
+			continue
+		}
+		if totalExpense > 0 {
+			s.Percentage = (s.Amount / totalExpense) * 100
+		} else {
+			s.Percentage = 0
+		}
 		stats = append(stats, s)
 	}
 
