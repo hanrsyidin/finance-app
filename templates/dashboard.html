@@ -267,34 +267,31 @@
                         class="lg:col-span-2 rounded-lg bg-card-dark border border-[#304f69]/30 p-6 flex flex-col gap-6">
                         <div class="flex justify-between items-start">
                             <div>
-                                <h3 class="text-white text-lg font-bold">Spending by Category</h3>
-                                <p class="text-text-secondary text-sm">Where your money goes</p>
+                                <h3 class="text-white text-lg font-bold">Daily Spending</h3>
+                                <p class="text-text-secondary text-sm">Expenses per day</p>
                             </div>
                         </div>
 
-                        <!-- Dynamic Bars (Percentage based) -->
+                        <!-- Dynamic Bars (Daily) -->
                         <div
-                            class="flex-1 w-full flex items-end justify-between gap-2 sm:gap-4 px-2 pt-4 pb-2 h-[250px]">
-                            <template x-if="expenseByCategory.length === 0">
+                            class="flex-1 w-full flex items-end justify-between gap-1 px-1 pt-4 pb-2 h-[250px] overflow-x-auto custom-scrollbar">
+                            <template x-if="dailyStats.length === 0">
                                 <div class="w-full h-full flex items-center justify-center text-text-secondary">
-                                    No expense data yet
+                                    No data yet
                                 </div>
                             </template>
 
-                            <template x-for="cat in expenseByCategory" :key="cat.name">
-                                <div class="flex flex-col items-center justify-end h-full w-full gap-2 group cursor-pointer"
-                                    :title="cat.name + ': ' + formatCurrency(cat.amount)">
-                                    <div class="w-full max-w-[40px] bg-primary/30 group-hover:bg-primary transition-all rounded-t-sm relative"
-                                        :style="'height: ' + (cat.percentage || 5) + '%'">
+                            <template x-for="day in dailyStats" :key="day.day">
+                                <div class="flex flex-col items-center justify-end h-full flex-shrink-0 w-8 md:w-full gap-2 group cursor-pointer"
+                                    :title="'Day ' + day.day + ': ' + formatCurrency(day.amount)">
+                                    <!-- Bar -->
+                                    <div class="w-2 md:w-3 bg-primary/30 group-hover:bg-primary transition-all rounded-t-sm relative"
+                                        :style="'height: ' + (day.percentage || 0) + '%'">
                                         <div class="opacity-0 group-hover:opacity-100 absolute -top-10 left-1/2 -translate-x-1/2 bg-white text-background-dark text-xs font-bold px-2 py-1 rounded whitespace-nowrap z-10"
-                                            x-text="formatCurrency(cat.amount)"></div>
+                                            x-text="formatCurrency(day.amount)"></div>
                                     </div>
-                                    <div class="flex flex-col items-center">
-                                        <span class="text-2xl" x-text="cat.icon"></span>
-                                        <span
-                                            class="text-text-secondary text-[10px] font-medium truncate w-12 text-center"
-                                            x-text="cat.name"></span>
-                                    </div>
+                                    <!-- Label -->
+                                    <div class="text-text-secondary text-[10px] font-medium" x-text="day.day"></div>
                                 </div>
                             </template>
                         </div>
@@ -500,7 +497,8 @@
                     expenseChange: 0
                 },
                 recentTransactions: [],
-                expenseByCategory: [],
+                // expenseByCategory: [], // removed
+                dailyStats: [],
                 categories: [],
 
                 // Toast
@@ -606,15 +604,22 @@
                         }
 
                         // REAL API CALLS
-                        const [summaryRes, transactionsRes, categoryStatsRes] = await Promise.all([
+                        const [summaryRes, transactionsRes, dailyStatsRes] = await Promise.all([
                             fetch(`/api/summary?month=${this.currentMonth}`),
                             fetch(`/api/transactions?month=${this.currentMonth}&limit=5`),
-                            fetch(`/api/stats/category?month=${this.currentMonth}`)
+                            fetch(`/api/stats/daily?month=${this.currentMonth}`)
                         ]);
 
                         this.summary = await summaryRes.json();
                         this.recentTransactions = await transactionsRes.json();
-                        this.expenseByCategory = await categoryStatsRes.json();
+
+                        const rawDaily = await dailyStatsRes.json();
+                        // Find max amount to calculate percentage for bars
+                        const maxAmount = Math.max(...rawDaily.map(d => d.amount), 1);
+                        this.dailyStats = rawDaily.map(d => ({
+                            ...d,
+                            percentage: (d.amount / maxAmount) * 100
+                        }));
                     } catch (err) {
                         console.error('Failed to load data:', err);
                         this.showToast('Failed to load data', 'error');

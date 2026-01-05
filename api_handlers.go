@@ -2,8 +2,10 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 // -- Models --
@@ -297,4 +299,59 @@ func getCategoryStats(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(stats)
+}
+
+func getDailyStats(w http.ResponseWriter, r *http.Request) {
+	month := r.URL.Query().Get("month")
+	if month == "" {
+		month = time.Now().Format("2006-01")
+	}
+
+	// Helper to get number of days in month
+	t, _ := time.Parse("2006-01", month)
+	year, m, _ := t.Date()
+	daysInMonth := time.Date(year, m+1, 0, 0, 0, 0, 0, time.UTC).Day()
+
+	// Initialize map for all days
+	dailyMap := make(map[int]float64)
+	for i := 1; i <= daysInMonth; i++ {
+		dailyMap[i] = 0
+	}
+
+	// Query
+	query := `
+		SELECT CAST(strftime('%d', date) AS INTEGER) as day, SUM(amount)
+		FROM transactions
+		WHERE type = 'expense' AND strftime('%Y-%m', date) = ?
+		GROUP BY day
+	`
+	rows, err := db.Query(query, month)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var day int
+		var total float64
+		rows.Scan(&day, &total)
+		dailyMap[day] = total
+	}
+
+	// Convert to sorted slice
+	type DailyStat struct {
+		Day    string  `json:"day"`
+		Amount float64 `json:"amount"`
+	}
+	var result []DailyStat
+	for i := 1; i <= daysInMonth; i++ {
+		result = append(result, DailyStat{
+			Day:    fmt.Sprintf("%02d", i),
+			Amount: dailyMap[i],
+		})
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(result)
 }

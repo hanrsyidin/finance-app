@@ -80,6 +80,7 @@ func main() {
 
 	mux.HandleFunc("/api/summary", authMiddleware(getDashboardSummary))
 	mux.HandleFunc("/api/stats/category", authMiddleware(getCategoryStats))
+	mux.HandleFunc("/api/stats/daily", authMiddleware(getDailyStats))
 
 	// 3. Start Server
 	port := ":8081"
