@@ -172,11 +172,21 @@
                     <h1 class="text-white text-xl md:text-2xl font-extrabold tracking-tight truncate">Categories</h1>
                 </div>
 
-                <button @click="openModal()"
-                    class="flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-primary hover:bg-primary/90 text-[#101a23] text-sm font-bold shadow-lg shadow-primary/20 transition-all hover:scale-105 shrink-0">
-                    <span class="material-symbols-outlined text-[20px]">add</span>
-                    <span class="hidden sm:inline">New Category</span>
-                </button>
+                <div class="flex items-center gap-2 md:gap-4 flex-1 justify-end">
+                    <!-- Search Input -->
+                    <div class="relative group hidden sm:block">
+                        <span
+                            class="absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary group-focus-within:text-primary transition-colors material-symbols-outlined text-[20px]">search</span>
+                        <input x-model="search" type="text" placeholder="Search..."
+                            class="bg-[#1a2c38] border border-[#223849] text-white text-sm rounded-lg h-10 pl-10 pr-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all w-[150px] focus:w-[200px]">
+                    </div>
+
+                    <button @click="openModal()"
+                        class="flex items-center justify-center gap-2 rounded-lg h-10 px-4 bg-primary hover:bg-primary/90 text-[#101a23] text-sm font-bold shadow-lg shadow-primary/20 transition-all hover:scale-105 shrink-0">
+                        <span class="material-symbols-outlined text-[20px]">add</span>
+                        <span class="hidden sm:inline">New Category</span>
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -378,11 +388,17 @@
                 categories: [],
                 modal: { show: false, editMode: false },
                 form: { id: null, type: 'expense', name: '', icon: '', color: 'blue-500' },
+                search: '',
                 toast: { show: false, message: '', type: 'info' },
                 saving: false,
 
                 get filteredCategories() {
-                    return this.categories.filter(c => c.type === this.activeTab);
+                    let cats = this.categories.filter(c => c.type === this.activeTab);
+                    if (this.search) {
+                        const q = this.search.toLowerCase();
+                        cats = cats.filter(c => c.name.toLowerCase().includes(q));
+                    }
+                    return cats;
                 },
 
                 async init() {
