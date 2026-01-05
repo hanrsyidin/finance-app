@@ -71,6 +71,8 @@ func main() {
 	mux.HandleFunc("/api/transactions/", authMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "DELETE" {
 			deleteTransaction(w, r)
+		} else if r.Method == "PUT" {
+			updateTransaction(w, r)
 		} else {
 			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}

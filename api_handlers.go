@@ -167,6 +167,33 @@ func createTransaction(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(t)
 }
 
+func updateTransaction(w http.ResponseWriter, r *http.Request) {
+	idStr := r.URL.Path[len("/api/transactions/"):]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	var t Transaction
+	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Update query
+	_, err = db.Exec("UPDATE transactions SET amount=?, description=?, date=?, type=?, category_id=? WHERE id=?",
+		t.Amount, t.Description, t.Date, t.Type, t.CategoryID, id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	t.ID = id
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(t)
+}
+
 func deleteTransaction(w http.ResponseWriter, r *http.Request) {
 	idStr := r.URL.Path[len("/api/transactions/"):]
 	id, err := strconv.Atoi(idStr)
